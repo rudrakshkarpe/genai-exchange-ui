@@ -1,0 +1,105 @@
+Product Requirements Document: AI Trip Planner (MVP Frontend)
+Version: 1.0
+Date: September 22, 2025
+Author: Brainstormer AI
+
+1. Introduction
+This document outlines the requirements for the Minimum Viable Product (MVP) frontend of the AI Trip Planner. The goal is to build a clean, modern, and responsive web interface that serves as the primary interaction layer for the powerful agentic AI backend. For this version, the focus is exclusively on the core conversational planning experience.
+
+2. Core User Experience
+The user's journey is simple: they visit the web app, start a conversation with the AI planner, and see their trip itinerary come to life in real-time.
+
+User Stories:
+
+As a traveler, I want to type my trip ideas into a chat box and get instant, intelligent responses.
+
+As a planner, I want to see the generated trip itinerary displayed clearly next to my conversation.
+
+As a user, I want the application to feel fast, intuitive, and inspiring to use.
+
+3. Key Features (MVP Scope)
+3.1. Main Application Layout
+Structure: A two-panel layout. The left (main) panel will be the Chat Interface (approx. 65% of the width). The right panel will be the Itinerary Display (approx. 35% of the width).
+
+Header: A simple, clean header containing the application logo on the top-left.
+
+3.2. Feature: Conversational Chat Interface
+Chat Display: A scrollable window showing the conversation history.
+
+User messages: Right-aligned, simple text bubbles.
+
+AI responses: Left-aligned, perhaps with a small icon next to the bubble.
+
+Input Area: A fixed input area at the bottom of the chat panel.
+
+Text Field: A standard text input field with a placeholder like "Tell me about your dream trip to..."
+
+Send Button: A clear, clickable button to submit the text.
+
+Voice Input (Placeholder): A microphone icon must be present next to the send button. For this MVP, it should be visually disabled (e.g., grayed out) and non-functional.
+
+3.3. Feature: Dynamic Itinerary Display
+Purpose: To visually represent the trip plan as it's being built by the AI. This panel is read-only for the user in this version.
+
+Structure:
+
+Trip Title: Display the trip destination and dates at the top (e.g., "5-Day Adventure in Kerala").
+
+Day Cards: The itinerary should be organized into cards, one for each day.
+
+Card Content: Each card should have a clear title (e.g., Day 1: Arrival in Kochi) and a chronological list of activities (e.g., 9:00 AM: Explore Fort Kochi, 1:00 PM: Lunch at a local cafe).
+
+Behavior: This panel must dynamically update whenever the backend provides a new itinerary structure. It should smoothly render the new day cards or activities without a full page refresh.
+
+4. Design and UI/UX Guidelines
+Overall Vibe: Modern, minimalist, and adventurous. The design should feel clean and spacious, putting the focus on the conversation and the beautiful itinerary.
+
+Color Palette:
+
+Primary Background: Off-white or very light gray (#F8F9FA).
+
+Accent Color: An energetic and optimistic color for buttons, links, and highlights. A vibrant blue (#007BFF) or a warm coral (#FF7F50) would work well.
+
+Text: A dark, highly readable charcoal gray (#212529).
+
+Typography:
+
+Font: Use a clean, modern sans-serif font family like Inter or Poppins (available from Google Fonts).
+
+Hierarchy: Use distinct font sizes and weights for headings (itinerary title, day numbers) and body text (chat messages, activity descriptions).
+
+Logo: The provided logo file should be placed in the top-left of the application header. Ensure it is sized appropriately and has adequate clear space around it.
+
+5. Technical Requirements & Backend Interaction
+Scope: This project is for the frontend application only. The backend will be developed and connected separately.
+
+Framework: The application should be built using a modern JavaScript framework like React.
+
+API Interaction:
+
+The frontend must be structured to communicate with a backend API.
+
+A primary API call will be made when the user sends a chat message. This call will send the user's text.
+
+The expected API response should be a JSON object containing two keys:
+
+"chat_response": A string with the AI's text message to be displayed in the chat.
+
+"itinerary_data": A structured JSON object representing the entire updated itinerary for the Itinerary Display panel.
+
+For development, a mock API function should be created that returns sample JSON data in the expected format to allow for UI development without a live backend.
+
+State Management: Utilize a state management solution (e.g., React Context or Zustand) to handle the itinerary state, ensuring the Itinerary Display panel re-renders efficiently when the state is updated by an API response.
+
+6. Out of Scope for this Version
+To ensure focus, the following features are explicitly excluded from this MVP release:
+
+User accounts, login, or profiles.
+
+Saving or sharing itineraries.
+
+Any manual editing of the itinerary (e.g., drag-and-drop).
+
+Interactive maps, dashboards, or mood boards.
+
+Booking or payment integrations.
