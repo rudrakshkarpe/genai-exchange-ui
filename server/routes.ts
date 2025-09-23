@@ -1,9 +1,8 @@
 import type { Express } from "express";
-import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { chatRequestSchema, type ApiResponse } from "@shared/schema";
 
-export async function registerRoutes(app: Express): Promise<Server> {
+export function registerRoutes(app: Express) {
   // Chat endpoint for sending messages
   app.post("/api/chat", async (req, res) => {
     try {
@@ -20,8 +19,4 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ error: "Invalid request" });
     }
   });
-
-  const httpServer = createServer(app);
-
-  return httpServer;
 }
