@@ -7,7 +7,7 @@ export default function Header() {
         <img 
           src={logoUrl} 
           alt="TravelMate.ai" 
-          className="h-8"
+          className="h-80"
           data-testid="img-logo"
         />
       </div>
