@@ -1,183 +1,252 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
-import { type ChatMessage, type Itinerary } from '@shared/schema';
+import { createContext, useContext, useState, ReactNode } from "react";
+import { type ChatMessage, type Itinerary } from "@shared/schema";
+
+interface TravelState {
+  messages: ChatMessage[];
+  itinerary?: Itinerary;
+  isLoading: boolean;
+}
 
 interface TravelContextType {
-  messages: ChatMessage[];
-  itinerary: Itinerary | undefined;
-  isLoading: boolean;
-  addMessage: (message: ChatMessage) => void;
-  updateItinerary: (itinerary: Itinerary | undefined) => void;
+  state: TravelState;
+  addMessage: (message: Omit<ChatMessage, "id" | "timestamp">) => void;
+  updateItinerary: (itinerary: Itinerary) => void;
   setLoading: (loading: boolean) => void;
-  sendMessage: (content: string) => Promise<void>;
 }
 
 const TravelContext = createContext<TravelContextType | undefined>(undefined);
 
-interface TravelProviderProps {
-  children: ReactNode;
-}
+// Sample hardcoded itinerary for design review
+const sampleItinerary: Itinerary = {
+  trip_name: "Kerala Backwaters & Hills Adventure",
+  start_date: "2024-01-15",
+  end_date: "2024-01-20",
+  origin: "Kochi",
+  destination: "Kerala, India",
+  days: [
+    {
+      day_number: 1,
+      date: "2024-01-15",
+      events: [
+        {
+          type: "flight",
+          id: "flight-1",
+          time: "10:30 AM",
+          title: "Arrival in Kochi",
+          description: "Flight from Mumbai to Kochi International Airport",
+          flight_number: "AI 681",
+          from: "Mumbai (BOM)",
+          to: "Kochi (COK)"
+        },
+        {
+          type: "hotel",
+          id: "hotel-1",
+          time: "2:00 PM",
+          title: "Check-in at Hotel",
+          description: "Luxury waterfront hotel with traditional Kerala architecture",
+          hotel_name: "Taj Malabar Resort & Spa",
+          address: "Willingdon Island, Kochi"
+        },
+        {
+          type: "attraction",
+          id: "attraction-1",
+          time: "4:00 PM",
+          title: "Fort Kochi Walking Tour",
+          description: "Explore the historic Portuguese and Dutch colonial architecture",
+          location: "Fort Kochi",
+          duration: "2 hours"
+        }
+      ]
+    },
+    {
+      day_number: 2,
+      date: "2024-01-16",
+      events: [
+        {
+          type: "attraction",
+          id: "attraction-2",
+          time: "8:00 AM",
+          title: "Backwater Cruise",
+          description: "Traditional houseboat cruise through Kerala's famous backwaters",
+          location: "Alleppey Backwaters",
+          duration: "Full day"
+        },
+        {
+          type: "attraction",
+          id: "attraction-3",
+          time: "1:00 PM",
+          title: "Traditional Kerala Lunch",
+          description: "Authentic meal served on banana leaf aboard the houseboat",
+          location: "Houseboat",
+          duration: "1 hour"
+        }
+      ]
+    },
+    {
+      day_number: 3,
+      date: "2024-01-17",
+      events: [
+        {
+          type: "attraction",
+          id: "attraction-4",
+          time: "9:00 AM",
+          title: "Munnar Hill Station",
+          description: "Drive to the picturesque tea plantations of Munnar",
+          location: "Munnar",
+          duration: "3 hours drive"
+        },
+        {
+          type: "hotel",
+          id: "hotel-2",
+          time: "1:00 PM",
+          title: "Check-in Mountain Resort",
+          description: "Eco-friendly resort surrounded by tea gardens",
+          hotel_name: "Tea Valley Resort",
+          address: "Munnar Hills, Kerala"
+        },
+        {
+          type: "attraction",
+          id: "attraction-5",
+          time: "3:30 PM",
+          title: "Tea Plantation Visit",
+          description: "Learn about tea processing and enjoy fresh mountain air",
+          location: "Kolukkumalai Tea Estate",
+          duration: "2 hours"
+        }
+      ]
+    },
+    {
+      day_number: 4,
+      date: "2024-01-18",
+      events: [
+        {
+          type: "attraction",
+          id: "attraction-6",
+          time: "6:00 AM",
+          title: "Sunrise at Echo Point",
+          description: "Watch the spectacular sunrise over the Western Ghats",
+          location: "Echo Point, Munnar",
+          duration: "2 hours"
+        },
+        {
+          type: "attraction",
+          id: "attraction-7",
+          time: "11:00 AM",
+          title: "Eravikulam National Park",
+          description: "Wildlife sanctuary home to the endangered Nilgiri Tahr",
+          location: "Eravikulam National Park",
+          duration: "3 hours"
+        },
+        {
+          type: "attraction",
+          id: "attraction-8",
+          time: "4:00 PM",
+          title: "Spice Garden Tour",
+          description: "Explore aromatic spice plantations and learn about cultivation",
+          location: "Munnar Spice Gardens",
+          duration: "1.5 hours"
+        }
+      ]
+    },
+    {
+      day_number: 5,
+      date: "2024-01-19",
+      events: [
+        {
+          type: "attraction",
+          id: "attraction-9",
+          time: "10:00 AM",
+          title: "Return to Kochi",
+          description: "Scenic drive back to Kochi with stops at viewpoints",
+          location: "Munnar to Kochi",
+          duration: "4 hours"
+        },
+        {
+          type: "attraction",
+          id: "attraction-10",
+          time: "3:00 PM",
+          title: "Kerala Kathakali Performance",
+          description: "Traditional dance performance showcasing Kerala's cultural heritage",
+          location: "Kerala Kathakali Centre, Kochi",
+          duration: "1 hour"
+        },
+        {
+          type: "attraction",
+          id: "attraction-11",
+          time: "6:00 PM",
+          title: "Sunset at Marine Drive",
+          description: "Relaxing evening walk along Kochi's waterfront promenade",
+          location: "Marine Drive, Kochi",
+          duration: "1 hour"
+        }
+      ]
+    },
+    {
+      day_number: 6,
+      date: "2024-01-20",
+      events: [
+        {
+          type: "flight",
+          id: "flight-2",
+          time: "2:15 PM",
+          title: "Departure from Kochi",
+          description: "Return flight to Mumbai",
+          flight_number: "AI 684",
+          from: "Kochi (COK)",
+          to: "Mumbai (BOM)"
+        }
+      ]
+    }
+  ]
+};
 
-export function TravelProvider({ children }: TravelProviderProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [itinerary, setItinerary] = useState<Itinerary | undefined>(undefined);
-  const [isLoading, setIsLoading] = useState(false);
+export function TravelProvider({ children }: { children: ReactNode }) {
+  const [state, setState] = useState<TravelState>({
+    messages: [
+      {
+        id: "welcome-1",
+        type: "ai",
+        content: "Welcome to TravelMate AI! I'm here to help you plan the perfect trip. Tell me about your dream destination, travel dates, or any specific interests you have, and I'll create a personalized itinerary just for you.",
+        timestamp: new Date()
+      }
+    ],
+    // Initialize with sample itinerary for design review
+    itinerary: sampleItinerary,
+    isLoading: false,
+  });
 
-  const addMessage = (message: ChatMessage) => {
-    setMessages(prev => [...prev, message]);
+  const addMessage = (message: Omit<ChatMessage, "id" | "timestamp">) => {
+    const newMessage: ChatMessage = {
+      ...message,
+      id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      timestamp: new Date(),
+    };
+
+    setState(prev => ({
+      ...prev,
+      messages: [...prev.messages, newMessage],
+    }));
   };
 
-  const updateItinerary = (newItinerary: Itinerary | undefined) => {
-    setItinerary(newItinerary);
+  const updateItinerary = (itinerary: Itinerary) => {
+    setState(prev => ({
+      ...prev,
+      itinerary,
+    }));
   };
 
   const setLoading = (loading: boolean) => {
-    setIsLoading(loading);
+    setState(prev => ({
+      ...prev,
+      isLoading: loading,
+    }));
   };
 
-  // Mock API call - replace with real backend integration later
-  const sendMessage = async (content: string) => {
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      type: 'user',
-      content,
-      timestamp: new Date()
-    };
-    
-    addMessage(userMessage);
-    setLoading(true);
-
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // Mock AI response based on user input
-    const generateMockResponse = (userContent: string) => {
-      if (userContent.toLowerCase().includes('kerala')) {
-        const mockItinerary: Itinerary = {
-          id: 'kerala-trip',
-          title: '5-Day Adventure in Kerala',
-          destination: 'Kerala, India',
-          dates: 'March 15-20, 2024',
-          days: [
-            {
-              id: 'day-1',
-              dayNumber: 1,
-              title: 'Arrival in Kochi',
-              activities: [
-                {
-                  id: 'activity-1',
-                  time: '9:00 AM',
-                  title: 'Airport Transfer & Check-in',
-                  description: 'Arrive at Cochin International Airport and transfer to your hotel'
-                },
-                {
-                  id: 'activity-2',
-                  time: '11:00 AM',
-                  title: 'Explore Fort Kochi',
-                  description: 'Walk through historic streets and visit Chinese fishing nets'
-                },
-                {
-                  id: 'activity-3',
-                  time: '1:00 PM',
-                  title: 'Traditional Kerala Lunch',
-                  description: 'Enjoy authentic cuisine at a local restaurant'
-                }
-              ]
-            },
-            {
-              id: 'day-2',
-              dayNumber: 2,
-              title: 'Backwaters Experience',
-              activities: [
-                {
-                  id: 'activity-4',
-                  time: '8:00 AM',
-                  title: 'Drive to Alleppey',
-                  description: 'Scenic drive through Kerala countryside'
-                },
-                {
-                  id: 'activity-5',
-                  time: '10:00 AM',
-                  title: 'Houseboat Cruise',
-                  description: 'Full day backwater experience with traditional lunch'
-                }
-              ]
-            }
-          ]
-        };
-        return {
-          response: "Perfect choice! Kerala is absolutely magical with its backwaters and spice gardens. I've created a wonderful 5-day itinerary that includes serene houseboat experiences, authentic cuisine, and cultural immersion. Your adventure includes Fort Kochi's colonial charm, peaceful backwater cruises, and traditional Kerala experiences.",
-          itinerary: mockItinerary
-        };
-      } else if (userContent.toLowerCase().includes('paris')) {
-        const parisItinerary: Itinerary = {
-          id: 'paris-trip',
-          title: 'Romantic Paris Weekend',
-          destination: 'Paris, France',
-          dates: 'April 12-14, 2024',
-          days: [
-            {
-              id: 'day-1',
-              dayNumber: 1,
-              title: 'Classic Parisian Romance',
-              activities: [
-                {
-                  id: 'activity-1',
-                  time: '10:00 AM',
-                  title: 'Eiffel Tower Visit',
-                  description: 'Start your romantic getaway with iconic tower views'
-                },
-                {
-                  id: 'activity-2',
-                  time: '12:30 PM',
-                  title: 'Seine River Lunch Cruise',
-                  description: 'Romantic lunch while cruising past Paris landmarks'
-                },
-                {
-                  id: 'activity-3',
-                  time: '7:00 PM',
-                  title: 'Dinner at Le Jules Verne',
-                  description: 'Michelin-starred dining in the Eiffel Tower'
-                }
-              ]
-            }
-          ]
-        };
-        return {
-          response: "How romantic! Paris is absolutely perfect for an anniversary celebration. I've crafted an intimate 2-day experience featuring the city's most romantic spots, Michelin-starred dining, and scenic walks along the Seine. This itinerary captures the essence of Parisian romance!",
-          itinerary: parisItinerary
-        };
-      } else {
-        return {
-          response: "That sounds like an amazing adventure! I'd love to help you plan the perfect trip. Could you tell me more about your destination, travel dates, and what kind of experiences you're most excited about? I'll create a personalized itinerary just for you!",
-          itinerary: undefined
-        };
-      }
-    };
-
-    const mockResponse = generateMockResponse(content);
-    
-    const aiMessage: ChatMessage = {
-      id: (Date.now() + 1).toString(),
-      type: 'ai',
-      content: mockResponse.response,
-      timestamp: new Date()
-    };
-
-    addMessage(aiMessage);
-    if (mockResponse.itinerary) {
-      updateItinerary(mockResponse.itinerary);
-    }
-    setLoading(false);
-  };
-
-  const value = {
-    messages,
-    itinerary,
-    isLoading,
+  const value: TravelContextType = {
+    state,
     addMessage,
     updateItinerary,
     setLoading,
-    sendMessage
   };
 
   return (
@@ -187,10 +256,10 @@ export function TravelProvider({ children }: TravelProviderProps) {
   );
 }
 
-export const useTravelContext = () => {
+export function useTravelContext() {
   const context = useContext(TravelContext);
-  if (!context) {
-    throw new Error('useTravelContext must be used within a TravelProvider');
+  if (context === undefined) {
+    throw new Error("useTravelContext must be used within a TravelProvider");
   }
   return context;
-};
+}

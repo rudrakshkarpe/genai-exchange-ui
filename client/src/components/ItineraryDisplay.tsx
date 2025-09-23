@@ -1,6 +1,6 @@
 import { type Itinerary } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin, Calendar } from "lucide-react";
+import { MapPin, Calendar, Navigation } from "lucide-react";
 import DayCard from "./DayCard";
 
 interface ItineraryDisplayProps {
@@ -26,6 +26,18 @@ export default function ItineraryDisplay({ itinerary }: ItineraryDisplayProps) {
     );
   }
 
+  const formatDateRange = (startDate: string, endDate: string) => {
+    try {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const startFormatted = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const endFormatted = end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      return `${startFormatted} - ${endFormatted}`;
+    } catch {
+      return `${startDate} - ${endDate}`;
+    }
+  };
+
   return (
     <div className="h-full overflow-y-auto">
       {/* Trip Header */}
@@ -34,13 +46,14 @@ export default function ItineraryDisplay({ itinerary }: ItineraryDisplayProps) {
           <CardHeader className="pb-3">
             <CardTitle className="text-xl font-bold text-card-foreground flex items-center gap-2">
               <MapPin className="w-5 h-5 text-primary" />
-              {itinerary.title}
+              {itinerary.trip_name}
             </CardTitle>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
               <Calendar className="w-4 h-4" />
-              <span>{itinerary.dates}</span>
+              <span>{formatDateRange(itinerary.start_date, itinerary.end_date)}</span>
               <span>•</span>
-              <span>{itinerary.destination}</span>
+              <Navigation className="w-4 h-4" />
+              <span>{itinerary.origin} → {itinerary.destination}</span>
             </div>
           </CardHeader>
         </Card>
@@ -48,9 +61,15 @@ export default function ItineraryDisplay({ itinerary }: ItineraryDisplayProps) {
 
       {/* Days List */}
       <div className="p-6 space-y-4">
-        {itinerary.days.map((day) => (
-          <DayCard key={day.id} day={day} />
-        ))}
+        {itinerary.days.length > 0 ? (
+          itinerary.days.map((day) => (
+            <DayCard key={day.day_number} day={day} />
+          ))
+        ) : (
+          <div className="text-center p-8">
+            <p className="text-muted-foreground">No days planned yet</p>
+          </div>
+        )}
       </div>
     </div>
   );

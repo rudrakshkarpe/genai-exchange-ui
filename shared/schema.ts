@@ -10,33 +10,62 @@ export const chatMessageSchema = z.object({
 
 export type ChatMessage = z.infer<typeof chatMessageSchema>;
 
-// Activity Schema
-export const activitySchema = z.object({
+// Event Types
+export const flightEventSchema = z.object({
+  type: z.literal("flight"),
   id: z.string(),
   time: z.string(),
   title: z.string(),
   description: z.string().optional(),
+  flight_number: z.string().optional(),
+  from: z.string().optional(),
+  to: z.string().optional(),
 });
 
-export type Activity = z.infer<typeof activitySchema>;
-
-// Day Schema
-export const daySchema = z.object({
+export const hotelEventSchema = z.object({
+  type: z.literal("hotel"),
   id: z.string(),
-  dayNumber: z.number(),
+  time: z.string(),
   title: z.string(),
-  activities: z.array(activitySchema),
+  description: z.string().optional(),
+  hotel_name: z.string().optional(),
+  address: z.string().optional(),
 });
 
-export type Day = z.infer<typeof daySchema>;
+export const attractionEventSchema = z.object({
+  type: z.literal("attraction"),
+  id: z.string(),
+  time: z.string(),
+  title: z.string(),
+  description: z.string().optional(),
+  location: z.string().optional(),
+  duration: z.string().optional(),
+});
+
+export const eventSchema = z.union([flightEventSchema, hotelEventSchema, attractionEventSchema]);
+
+export type FlightEvent = z.infer<typeof flightEventSchema>;
+export type HotelEvent = z.infer<typeof hotelEventSchema>;
+export type AttractionEvent = z.infer<typeof attractionEventSchema>;
+export type Event = z.infer<typeof eventSchema>;
+
+// Itinerary Day Schema
+export const itineraryDaySchema = z.object({
+  day_number: z.number(),
+  date: z.string(), // YYYY-MM-DD format
+  events: z.array(eventSchema).default([]),
+});
+
+export type ItineraryDay = z.infer<typeof itineraryDaySchema>;
 
 // Itinerary Schema
 export const itinerarySchema = z.object({
-  id: z.string(),
-  title: z.string(),
+  trip_name: z.string(),
+  start_date: z.string(), // YYYY-MM-DD format
+  end_date: z.string(), // YYYY-MM-DD format
+  origin: z.string(),
   destination: z.string(),
-  dates: z.string(),
-  days: z.array(daySchema),
+  days: z.array(itineraryDaySchema).default([]),
 });
 
 export type Itinerary = z.infer<typeof itinerarySchema>;
