@@ -4,29 +4,15 @@
 import { v4 as uuidv4 } from 'uuid';
 // No need for pako import as we're using backend's noCompress parameter
 
-// Base URL of the backend service - can be overridden in .env file
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+// Base URL of the backend service
+const API_BASE_URL = "http://localhost:8080";
+// const API_BASE_URL = "https://fastapi-app-683449264474.europe-west1.run.app";
 
 // Session storage key
 const SESSION_KEY = "trip_planner_session";
 
 // Flag to use the backup direct API approach if sessions are failing
 let USE_DIRECT_API = false;
-
-// Allow checking backend connectivity
-export const checkBackendConnectivity = async (): Promise<boolean> => {
-  try {
-    // Attempt to connect to the backend with a simple request
-    const response = await fetch(`${API_BASE_URL}/healthcheck?noCompress=true`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' }
-    });
-    return response.ok;
-  } catch (error) {
-    console.error("Backend connectivity check failed:", error);
-    return false;
-  }
-};
 
 interface Session {
   appName: string;
@@ -99,7 +85,9 @@ export const getOrCreateSession = async (): Promise<Session> => {
       console.error("Error parsing stored session:", error);
       sessionStorage.removeItem(SESSION_KEY);
     }
-  }  // Create a new session - using exact values from test_run_endpoint.py
+  }
+  
+  // Create a new session - using exact values from test_run_endpoint.py
   const appName = "agents";
   const userId = "test-user"; // Using fixed user ID as in test script
   const sessionId = uuidv4();
@@ -143,7 +131,9 @@ export const getOrCreateSession = async (): Promise<Session> => {
       console.log("Session creation response:", responseData);
     } catch (e) {
       console.log("No JSON response body from session creation");
-    }    // Store the session in both sessionStorage (for current tab) and localStorage (for persistence)
+    }    
+    
+    // Store the session in both sessionStorage (for current tab) and localStorage (for persistence)
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
     try {
       // Also store in localStorage for persistence across page reloads
@@ -171,15 +161,24 @@ export const checkSessionExists = async (appName: string, userId: string, sessio
     const sessionUrl = `${API_BASE_URL}/apps/${appName}/users/${userId}/sessions/${sessionId}`;
     console.log(`Checking session URL: ${sessionUrl}`);
     
-    // First, try specific session endpoint
+    // First, try specific session endpoint - changed from GET to POST based on test_run_endpoint.py
     try {
+      const payload = {
+        appName,
+        userId,
+        sessionId
+      };
+      
       const response = await fetch(sessionUrl, {
-        method: 'GET',
+        method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'Accept': 'application/json' 
-        }
-      });      if (response.ok) {
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      if (response.ok) {
         console.log(`Session ${sessionId} exists and is valid`);
         return true;
       } else {
@@ -196,18 +195,28 @@ export const checkSessionExists = async (appName: string, userId: string, sessio
     } catch (specificError) {
       console.log("Error checking specific session:", specificError);
     }
-      // If specific check fails, try to list all sessions and check if this one is included
+    
+    // If specific check fails, try to list all sessions and check if this one is included
     try {
       const listSessionsUrl = `${API_BASE_URL}/apps/${appName}/users/${userId}/sessions`;
       console.log(`Listing all sessions at URL: ${listSessionsUrl}`);
       
+      // Changed from GET to POST based on test_run_endpoint.py
+      const payload = {
+        appName,
+        userId
+      };
+      
       const response = await fetch(listSessionsUrl, {
-        method: 'GET',
+        method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'Accept': 'application/json' 
-        }
-      });      if (response.ok) {
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      if (response.ok) {
         // Get response as text first to handle potential encoding issues
         const responseText = await response.text();
         console.log("Raw sessions list response length:", responseText.length);
@@ -238,7 +247,8 @@ export const checkSessionExists = async (appName: string, userId: string, sessio
           // It might be an object with different structure
           if (
             (sessions.sessionId && sessions.sessionId === sessionId) || 
-            (sessions.id && sessions.id === sessionId) ||            (sessions.sessions && Array.isArray(sessions.sessions) && 
+            (sessions.id && sessions.id === sessionId) ||
+            (sessions.sessions && Array.isArray(sessions.sessions) && 
              sessions.sessions.some((s: any) => 
                (s.sessionId === sessionId) || (s.id === sessionId)
              ))
@@ -292,9 +302,13 @@ export const sendMessage = async (message: string): Promise<any> => {
       };
 
       console.log("Sending message to backend:", message);
-      console.log("Using session:", session);      // Send request to the /run endpoint      console.log("Sending API request to:", `${API_BASE_URL}/run`);
+      console.log("Using session:", session);
+      
+      // Send request to the /run endpoint
+      console.log("Sending API request to:", `${API_BASE_URL}/run`);
       console.log("Request payload:", JSON.stringify(payload, null, 2));
-        // Add a query parameter to bypass gzip compression - VERY IMPORTANT
+      
+      // Add a query parameter to bypass gzip compression - VERY IMPORTANT
       const runEndpointUrl = `${API_BASE_URL}/run?noCompress=true`;
       console.log("Using modified URL with compression bypass:", runEndpointUrl);
       
@@ -309,7 +323,8 @@ export const sendMessage = async (message: string): Promise<any> => {
       });
 
       console.log("Received response with status:", response.status);
-        if (!response.ok) {
+      
+      if (!response.ok) {
         const errorText = await response.text();
         console.error("API Error Details:", errorText);
         console.error(`API request failed with status ${response.status} ${response.statusText}`);
@@ -323,44 +338,48 @@ export const sendMessage = async (message: string): Promise<any> => {
         }
         
         throw new Error(`API request failed: ${response.status} ${response.statusText}`);
-      }      // Parse and return the response
-      try {      // We're using ?noCompress=true so we shouldn't need to handle compression
-      const contentEncoding = response.headers.get('Content-Encoding');
-      console.log("Response Content-Encoding:", contentEncoding);
-      
-      // Get the response as text directly since we're using noCompress
-      let responseText;
-      try {
-        responseText = await response.text();
-        console.log("Response text length:", responseText.length);
-        
-        // Check if the response text has binary data markers
-        if (responseText.includes('�') || 
-            (responseText.length > 1 && responseText.charCodeAt(0) === 0x1f && responseText.charCodeAt(1) === 0x8b)) {
-          console.log("Response appears to contain binary data despite noCompress parameter");
-          // Return a fallback response if we detect binary data
-          return [{
-            content: "I'm processing your request. Please give me a moment to generate your travel plans."
-          }];
-        }
-      } catch (textError) {
-        console.error("Failed to get response as text:", textError);
-        // Try as blob as a fallback
-        const responseBlob = await response.blob();
-        console.log("Response blob size:", responseBlob.size);
-        console.log("Response blob type:", responseBlob.type);
-        
-        try {
-          responseText = await responseBlob.text();
-        } catch (blobError) {
-          console.error("Failed to get blob as text:", blobError);
-          // Return a fallback response if all else fails
-          return [{
-            content: "I'm processing your request. Please give me a moment to generate your travel plans."
-          }];
-        }
       }
-            let data;
+      
+      // Parse and return the response
+      try {      
+        // We're using ?noCompress=true so we shouldn't need to handle compression
+        const contentEncoding = response.headers.get('Content-Encoding');
+        console.log("Response Content-Encoding:", contentEncoding);
+        
+        // Get the response as text directly since we're using noCompress
+        let responseText;
+        try {
+          responseText = await response.text();
+          console.log("Response text length:", responseText.length);
+          
+          // Check if the response text has binary data markers
+          if (responseText.includes('�') || 
+              (responseText.length > 1 && responseText.charCodeAt(0) === 0x1f && responseText.charCodeAt(1) === 0x8b)) {
+            console.log("Response appears to contain binary data despite noCompress parameter");
+            // Return a fallback response if we detect binary data
+            return [{
+              content: "I'm processing your request. Please give me a moment to generate your travel plans."
+            }];
+          }
+        } catch (textError) {
+          console.error("Failed to get response as text:", textError);
+          // Try as blob as a fallback
+          const responseBlob = await response.blob();
+          console.log("Response blob size:", responseBlob.size);
+          console.log("Response blob type:", responseBlob.type);
+          
+          try {
+            responseText = await responseBlob.text();
+          } catch (blobError) {
+            console.error("Failed to get blob as text:", blobError);
+            // Return a fallback response if all else fails
+            return [{
+              content: "I'm processing your request. Please give me a moment to generate your travel plans."
+            }];
+          }
+        }
+        
+        let data;
         try {
           // Try to parse as JSON directly
           data = JSON.parse(responseText);
@@ -429,7 +448,8 @@ async function sendMessageDirectApi(message: string): Promise<any> {
       },
       streaming: false
     };
-      console.log("Using direct API fallback approach");
+      
+    console.log("Using direct API fallback approach");
     console.log("Direct API request payload:", JSON.stringify(payload, null, 2));
       
     // Add a query parameter to bypass gzip compression
@@ -448,11 +468,14 @@ async function sendMessageDirectApi(message: string): Promise<any> {
     });
     
     console.log("Direct API response status:", response.status);
-      if (!response.ok) {
+      
+    if (!response.ok) {
       const errorText = await response.text();
       console.error("Direct API error details:", errorText);
       throw new Error(`Direct API call failed: ${response.status}`);
-    }    try {
+    }
+    
+    try {
       // We're using ?noCompress=true so we shouldn't need to handle compression
       const contentEncoding = response.headers.get('Content-Encoding');
       console.log("Direct API Response Content-Encoding:", contentEncoding);
@@ -479,7 +502,8 @@ async function sendMessageDirectApi(message: string): Promise<any> {
           content: "I'm processing your request. Please give me a moment to generate your travel plans."
         }];
       }
-        let data;
+        
+      let data;
       try {
         // Try to parse as JSON directly
         data = JSON.parse(responseText);
@@ -593,7 +617,7 @@ export const parseAIResponse = (responseData: any) => {
             textParts.push(part.text.trim());
             }
         }
-        }
+      }
       
       // Handle candidates array format
       if (event.candidates && Array.isArray(event.candidates)) {
@@ -631,7 +655,7 @@ export const parseAIResponse = (responseData: any) => {
             textParts.push(part.text.trim());
             }
         }
-        }
+      }
       
       // Try to extract potential itinerary JSON data from any text content
       try {
