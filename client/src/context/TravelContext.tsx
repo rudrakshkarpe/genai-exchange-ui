@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { type ChatMessage, type Itinerary } from "@shared/schema";
-import { getOrCreateSession, resetSession } from "../services/apiService";
+import { getOrCreateSession, resetSession, checkBackendConnectivity } from "../services/apiService";
 
 interface TravelState {
   messages: ChatMessage[];
@@ -249,15 +249,25 @@ export function TravelProvider({ children }: { children: ReactNode }) {
             sessionInitialized: true,
             messages: filteredMessages,
           };
-        });
-      } catch (error) {
+        });      } catch (error) {
         console.error("Failed to initialize session:", error);
+        
+        // Check if the backend is available
+        const isConnected = await checkBackendConnectivity();
         
         // Show error message and mark as initialized after a delay
         setTimeout(() => {
           setState(prev => {
             // Filter out initialization message
             const filteredMessages = prev.messages.filter(msg => !msg.id.includes('msg-init-'));
+            
+            let errorMessage = "There was an issue connecting to the AI backend. ";
+            
+            if (!isConnected) {
+              errorMessage += "The backend server appears to be offline or unreachable. Please make sure the backend server is running at the correct address.";
+            } else {
+              errorMessage += "Some features may not work correctly. You can try resetting your session using the button in the header.";
+            }
             
             return {
               ...prev,
@@ -267,7 +277,7 @@ export function TravelProvider({ children }: { children: ReactNode }) {
                 {
                   id: `msg-error-${Date.now()}`,
                   type: "ai",
-                  content: "There was an issue connecting to the AI backend. Some features may not work correctly. You can try resetting your session using the button in the header.",
+                  content: errorMessage,
                   timestamp: new Date()
                 }
               ],

@@ -4,14 +4,29 @@
 import { v4 as uuidv4 } from 'uuid';
 // No need for pako import as we're using backend's noCompress parameter
 
-// Base URL of the backend service
-const API_BASE_URL = "http://localhost:8080";
+// Base URL of the backend service - can be overridden in .env file
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 // Session storage key
 const SESSION_KEY = "trip_planner_session";
 
 // Flag to use the backup direct API approach if sessions are failing
 let USE_DIRECT_API = false;
+
+// Allow checking backend connectivity
+export const checkBackendConnectivity = async (): Promise<boolean> => {
+  try {
+    // Attempt to connect to the backend with a simple request
+    const response = await fetch(`${API_BASE_URL}/healthcheck?noCompress=true`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    return response.ok;
+  } catch (error) {
+    console.error("Backend connectivity check failed:", error);
+    return false;
+  }
+};
 
 interface Session {
   appName: string;
