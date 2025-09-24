@@ -5,8 +5,8 @@ import { v4 as uuidv4 } from 'uuid';
 // No need for pako import as we're using backend's noCompress parameter
 
 // Base URL of the backend service
-const API_BASE_URL = "http://localhost:8080";
-// const API_BASE_URL = "https://fastapi-app-683449264474.europe-west1.run.app";
+// const API_BASE_URL = "http://localhost:8080";
+const API_BASE_URL = "https://fastapi-app-683449264474.europe-west1.run.app";
 
 // Session storage key
 const SESSION_KEY = "trip_planner_session";
