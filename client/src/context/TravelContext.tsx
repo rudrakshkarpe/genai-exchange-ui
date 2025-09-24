@@ -1,10 +1,12 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { type ChatMessage, type Itinerary } from "@shared/schema";
+import { getOrCreateSession, resetSession } from "../services/apiService";
 
 interface TravelState {
   messages: ChatMessage[];
   itinerary?: Itinerary;
   isLoading: boolean;
+  sessionInitialized: boolean;
 }
 
 interface TravelContextType {
@@ -12,6 +14,7 @@ interface TravelContextType {
   addMessage: (message: Omit<ChatMessage, "id" | "timestamp">) => void;
   updateItinerary: (itinerary: Itinerary) => void;
   setLoading: (loading: boolean) => void;
+  refreshSession: () => Promise<void>;
 }
 
 const TravelContext = createContext<TravelContextType | undefined>(undefined);
@@ -213,7 +216,82 @@ export function TravelProvider({ children }: { children: ReactNode }) {
     // Initialize with sample itinerary for design review
     itinerary: sampleItinerary,
     isLoading: false,
-  });
+    sessionInitialized: false,
+  });  // Initialize the session when the component mounts
+  useEffect(() => {
+    const initSession = async () => {
+      // Add the initialization message
+      setState(prev => ({
+        ...prev,
+        messages: [
+          ...prev.messages,
+          {
+            id: `msg-init-${Date.now()}`,
+            type: "ai",
+            content: "Connecting to AI backend...",
+            timestamp: new Date()
+          }
+        ],
+      }));
+      
+      try {
+        // Get or create a session with specific logging
+        const session = await getOrCreateSession();
+        console.log("Session initialized with ID:", session.sessionId);
+        
+        // Update messages with success indicator and mark initialized
+        setState(prev => {
+          // Filter out initialization message
+          const filteredMessages = prev.messages.filter(msg => !msg.id.includes('msg-init-'));
+          
+          return {
+            ...prev,
+            sessionInitialized: true,
+            messages: filteredMessages,
+          };
+        });
+      } catch (error) {
+        console.error("Failed to initialize session:", error);
+        
+        // Show error message and mark as initialized after a delay
+        setTimeout(() => {
+          setState(prev => {
+            // Filter out initialization message
+            const filteredMessages = prev.messages.filter(msg => !msg.id.includes('msg-init-'));
+            
+            return {
+              ...prev,
+              sessionInitialized: true,
+              messages: [
+                ...filteredMessages,
+                {
+                  id: `msg-error-${Date.now()}`,
+                  type: "ai",
+                  content: "There was an issue connecting to the AI backend. Some features may not work correctly. You can try resetting your session using the button in the header.",
+                  timestamp: new Date()
+                }
+              ],
+            };
+          });
+        }, 3000);
+      }
+    };    
+    initSession();
+    
+    // Set up a periodic session check every 5 minutes
+    const sessionCheckInterval = setInterval(async () => {
+      try {
+        console.log("Performing periodic session verification");
+        // This will verify if the session is still valid
+        await getOrCreateSession();
+      } catch (error) {
+        console.error("Error during periodic session check:", error);
+      }
+    }, 5 * 60 * 1000); // 5 minutes
+    
+    // Clean up the interval when the component unmounts
+    return () => clearInterval(sessionCheckInterval);
+  }, []);
 
   const addMessage = (message: Omit<ChatMessage, "id" | "timestamp">) => {
     const newMessage: ChatMessage = {
@@ -234,12 +312,57 @@ export function TravelProvider({ children }: { children: ReactNode }) {
       itinerary,
     }));
   };
-
   const setLoading = (loading: boolean) => {
     setState(prev => ({
       ...prev,
       isLoading: loading,
     }));
+  };
+  
+  const refreshSession = async () => {
+    setState(prev => ({
+      ...prev,
+      isLoading: true,
+      sessionInitialized: false,
+    }));
+    
+    try {
+      // Reset the session
+      await resetSession();
+      
+      // Clear messages and set a new welcome message
+      setState(prev => ({
+        ...prev,
+        sessionInitialized: true,
+        isLoading: false,
+        messages: [
+          {
+            id: `welcome-${Date.now()}`,
+            type: "ai",
+            content: "Session has been reset. Welcome back to TravelMate AI! I'm ready to help you plan a new trip.",
+            timestamp: new Date()
+          }
+        ]
+      }));
+    } catch (error) {
+      console.error("Error refreshing session:", error);
+      
+      // Still mark as initialized but show error
+      setState(prev => ({
+        ...prev,
+        sessionInitialized: true,
+        isLoading: false,
+        messages: [
+          ...prev.messages,
+          {
+            id: `error-${Date.now()}`,
+            type: "ai",
+            content: "There was an error refreshing your session. Please try reloading the page.",
+            timestamp: new Date()
+          }
+        ]
+      }));
+    }
   };
 
   const value: TravelContextType = {
@@ -247,6 +370,7 @@ export function TravelProvider({ children }: { children: ReactNode }) {
     addMessage,
     updateItinerary,
     setLoading,
+    refreshSession
   };
 
   return (
